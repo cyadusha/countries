@@ -1,0 +1,73 @@
+---
+title: "countries"
+author: "Yadu"
+date: "February 29, 2016"
+output: html_document
+---
+
+First we load the csv data into R from Github. We also load the required packages.
+
+```{r}
+library(RCurl)
+library(tidyr)
+library(dplyr)
+url = 'https://raw.githubusercontent.com/cyadusha/countries/master/ctyseasonal.csv'
+x = getURL(url)
+countries = read.csv(file = textConnection(x), header = TRUE)
+```
+
+Because we are only interested in the imports and exports for India and Canada, we subset the entire dataset where the country names are either India or Canada. We also select the columns which are titled "year" and the columns which are titled from BJAN to BDEC. These are the months of the year. We do not need the code for each country. Therefore we do not select the column that has country codes. 
+
+```{r}
+countries = subset(countries, countries$CTYNAME == 'India'| countries$CTYNAME == 'Canada', select = c(CTYNAME, year, BJAN:BDEC))
+```
+
+We name the columns as follows. 
+
+```{r}
+colnames(countries) = c("Country", "Year", "January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December")
+```
+
+Now, we gather all of the months into one column. All of the numeric values below the month names are the amount imported by the country. Negative values indicate export. 
+
+```{r}
+countries = countries %>%
+  gather(Country, Year, January:December, na.rm = F)
+```
+
+We name the columns of our new dataset as follows. 
+
+```{r}
+colnames(countries) = c("Country", "Year", "Month", "Import")
+```
+
+Now, the imports are arranged by country and year. There is no need to arrange it by month. Otherwise each month will be ordered in alphabetical order.  
+
+```{r}
+countries %>% arrange(Country, Year)
+```
+
+Now, we filter our new data set two times. One filter is for performing monthly analysis only for Canada. The other filter is for performing monthly analysis only for India. We arrange the rows in each filter by year.  
+
+```{r}
+cCanada = filter(countries, Country == 'Canada') %>% arrange(Year) 
+```
+
+```{r}
+cIndia = filter(countries, Country == 'India') %>% arrange(Year)
+```
+
+Now, we load the ggplot2 package and generate a scatterplot for each country. This scatterplot plots the amount imported over each month. 
+
+```{r}
+library(ggplot2)
+yearmonth = seq(1,84,1)
+qplot(yearmonth, cIndia$Import, xlab = "Month", ylab = "Import", main = "India's Imports")
+qplot(yearmonth, cCanada$Import, xlab = "Month", ylab = "Import", main = "Canada's Imports")
+```
+
+According to the scatterplot for India, from January 2009 to about October 2010, India seems to import more goods and export less. Then, from November 2010 onwards, India seems to export more goods and import almost no goods.
+
+The scatterplot for Canada shows an almost uniform distribution. The export seems to fluctuate between high and low over the time period examined.
+
+However, for both cases, the amount of imports is low. Therefore a favorable balance of trade is maintained for both countries. Import less and export more. 
